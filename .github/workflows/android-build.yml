@@ -1,24 +1,45 @@
-- name: Build debug APK
-  run: ./gradlew assembleDebug --stacktrace
+name: Android Build
 
-- name: Create Release
-  id: create_release
-  uses: actions/create-release@v1
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  with:
-    tag_name: v${{ github.run_number }}
-    release_name: Build ${{ github.run_number }}
-    draft: true
-    prerelease: false
+on:
+  push:
+    branches:
+      - main
 
-- name: Upload APK to Release
-  run: |
-    apk_path="app/build/outputs/apk/debug/app-debug.apk"
-    release_id=$(echo "${{ steps.create_release.outputs.upload_url }}" | awk -F/ '{print $NF}' | awk -F\? '{print $1}')
-    
-    curl -X POST \
-      -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-      -H "Content-Type: application/vnd.android.package-archive" \
-      --data-binary "@$apk_path" \
-      "https://uploads.github.com/repos/${{ github.repository }}/releases/$release_id/assets?name=app-debug.apk"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Build ${{ github.run_number }}
+          draft: true
+          prerelease: false
+
+      - name: Upload APK to Release
+        run: |
+          apk_path="app/build/outputs/apk/debug/app-debug.apk"
+          release_id=$(echo "${{ steps.create_release.outputs.upload_url }}" | awk -F/ '{print $NF}' | awk -F\? '{print $1}')
+          
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/vnd.android.package-archive" \
+            --data-binary "@$apk_path" \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/$release_id/assets?name=app-debug.apk"
