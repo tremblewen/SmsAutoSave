@@ -32,29 +32,24 @@ jobs:
 
       - name: Install Android SDK components
         run: |
+          # 配置 Android SDK 环境变量（适用于 GitHub Actions 的 Ubuntu 环境）
+          export ANDROID_SDK_ROOT=/opt/android-sdk
+          export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+          sdkmanager --install "platforms;android-33" "build-tools;33.0.2" "tools"
           yes | sdkmanager --licenses
-          sdkmanager "platforms;android-33" "build-tools;33.0.2"
+
+      - name: Grant execute permission for gradlew
+        run: |
+          chmod +x gradlew
+          ./gradlew --version
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          ./gradlew assembleDebug --stacktrace
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
         with:
-          tag_name: v${{ github.run_number }}
-          release_name: Build ${{ github.run_number }}
-          draft: false
-          prerelease: false
-
-      - name: Upload APK to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: app/build/outputs/apk/debug/app-debug.apk
-          asset_name: app-debug.apk
-          asset_content_type: application/vnd.android.package-archive
+          name: app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
