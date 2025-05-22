@@ -19,6 +19,9 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
 
+      - name: Verify working directory
+        run: ls -al
+
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
